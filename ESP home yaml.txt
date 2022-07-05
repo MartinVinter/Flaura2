@@ -1,0 +1,168 @@
+esphome:
+  name: flaura1
+  
+#power on moisture sensor when not sleeping  
+  on_boot:
+    priority: 90
+    then:
+    - output.turn_on: moist_power
+    - logger.log: "boot delay"
+    - lambda: |-        
+        delay(30000);
+
+
+#board-specific stuff, wifi etc. starts here
+esp32:
+  board: esp-wrover-kit
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "RiUvRgj/ao8o/tuMgXJfWctnquqeA43o9N9WDR+ZJkE="
+
+ota:
+  password: "2493d6d9a697afa197189f4a29dc6085"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Flaura1 Fallback Hotspot"
+    password: "FmyXDXKhvDye"
+
+#board-specific stuff, wifi etc. ends here
+
+deep_sleep:
+  run_duration: 10h
+  id: deep_sleep1
+  wakeup_pin:
+    number: GPIO00
+    inverted: true
+
+#def power pin for moisture sensor
+output:
+  - platform: gpio
+    id: moist_power
+    pin: 19
+
+#water level config
+binary_sensor:
+  - platform: gpio
+    pin: 35
+    name: lvl_gnd
+
+  - platform: gpio
+    pin: 
+      number: 25
+    name: lvl_empty
+    filters:
+      - invert:
+      - delayed_on_off: 100ms
+
+#    on_click:
+#      min_length: 5s
+#      then:
+#      -logger.log: "no water. Going to sleep"
+#      - deep_sleep.enter:
+#          id: deep_sleep1
+#          sleep_duration: 1min
+  
+  - platform: gpio
+    pin:
+      number: 26
+    name: lvl_warning
+    filters:
+      - delayed_on_off: 100ms
+      - invert:
+
+
+#moisture sensor config
+sensor:
+  - platform: adc
+    pin: GPIO33
+    id: "Moisture_flaura1"
+    update_interval: 2s
+    name: "Moisture flaura1"
+#    unit_of_measurement: "%"
+
+#Running median of moisture and mapping of values to 0-100 scale   
+#    filters:
+#    - median:
+#        window_size: 7
+#        send_every: 5
+#        send_first_at: 4
+#    - calibrate_linear:
+#      - 0.87 -> 0
+#      - 1.033-> 100
+#    - lambda: |-
+#        return ((id(Moisture_flaura1).state - 0.875) * -613.49);      
+    on_value_range:
+      - below: 1
+        then:
+          - logger.log: "moist enough. Sleeping for 1 minute"
+          - output.turn_off: moist_power
+          - deep_sleep.enter:
+              id: deep_sleep1
+              sleep_duration: 1 min
+      - above: 1
+        then:
+          - logger.log: "not moist enough. watering"
+          - output.turn_off: moist_power
+          - switch.turn_on: pump
+          - delay: 3s
+          - switch.turn_off: pump
+          - logger.log: "naptime."
+          - deep_sleep.enter:
+              id: deep_sleep1
+              sleep_duration: 1 min
+      
+
+
+
+  - platform: adc
+    pin: GPIO 32
+    id: "battery_level"
+    internal: true
+    
+  - platform: template
+    name: "flaura1 charge level"
+    unit_of_measurement: '%'
+    update_interval: 1s
+    filters:
+#not sure about the calibration, haven't tested it.
+    - calibrate_linear:
+        - 0.02 -> 0.00
+        - 0.65 -> 100.00    
+#    lambda: |-
+#      return ((id(battery_level).state /3.70) * 100.00);
+
+switch:
+  - platform: gpio
+    pin: GPIO 23
+    name: "Pump"
+    id: pump
+    inverted: true
+
+cover:
+  - platform: template
+    name: "pump"
+    open_action:
+      # Cancel any previous action
+      - switch.turn_off: pump
+      # Turn the OPEN switch on briefly
+      - switch.turn_on: pump
+      - delay: 30s
+      - switch.turn_off: pump
+    close_action:
+      - switch.turn_off: pump
+
+
+
