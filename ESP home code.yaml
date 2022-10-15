@@ -1,5 +1,7 @@
 esphome:
   name: flaura1
+  platform: ESP32
+  board: esp-wrover-kit 
   
 #power on moisture sensor when not sleeping  
   on_boot:
@@ -9,11 +11,6 @@ esphome:
     - logger.log: "boot delay"
     - lambda: |-        
         delay(30000);
-
-esp32:
-  board: esp-wrover-kit
-  framework:
-    type: arduino
 
 # Enable logging
 logger:
