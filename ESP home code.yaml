@@ -143,7 +143,9 @@ sensor:
               id: deep_sleep1
               sleep_duration: 1 min
       
-
+  - platform: wifi_signal
+    name: "flaura1 WiFi Signal"
+    update_interval: 60s   
 
 
   - platform: adc
