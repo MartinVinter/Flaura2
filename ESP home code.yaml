@@ -30,6 +30,14 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  manual_ip:
+    static_ip: !secret espwatering_ip
+    gateway: !secret gateway_ip
+    subnet: 255.255.255.0
+    dns1: !secret gateway_ip
+    dns2: 8.8.8.8  
+  output_power: 15dB
+  fast_connect: on  
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
