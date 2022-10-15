@@ -19,11 +19,29 @@ esp32:
 logger:
   level: VERBOSE
 
-# Enable Home Assistant API
-api:
-  encryption:
-    key: "key"
-
+mqtt:
+  broker: !secret HA_broker_ip
+  username: !secret HA_broker_username
+  password: !secret HA_broker_password
+  #making sure the birth and will topics are different will disable them so if ESP is unavailable will show last value and not leave gaps in sensor graphs
+  birth_message:
+    topic: plantwatering/birthdisable
+    payload: disable
+  will_message:
+    topic: plantwatering/willdisable
+    payload: disable
+  discovery: true
+  discovery_retain: true   
+  on_message:
+    - topic: solarplantwatering/ota_mode
+      payload: 'ON'
+      then:
+        - logger.log: 'OTA Mode ON - Deep sleep DISABLED'
+        - deep_sleep.prevent: deep_sleep_1
+    - topic: plantwatering/sleepearly
+      payload: 'ON'
+      then:
+        - deep_sleep.enter: deep_sleep_1        
 ota:
   password: "password"
 
