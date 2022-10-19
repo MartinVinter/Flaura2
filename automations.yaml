@@ -10,13 +10,13 @@
   action:
   - service: mqtt.publish
     data:
-      topic: plantwatering/ota_mode
+      topic: flaura1/ota_mode
       payload: 'ON'
       qos: '1'
       retain: true
   - service: mqtt.publish
     data:
-      topic: plantwatering/sleepearly
+      topic: flaura1/sleepearly
       payload: 'OFF'
       qos: '1'
       retain: true
@@ -36,13 +36,13 @@
   action:
   - service: mqtt.publish
     data:
-      topic: plantwatering/ota_mode
+      topic: flaura1/ota_mode
       payload: 'OFF'
       qos: '1'
       retain: true
   - service: mqtt.publish
     data:
-      topic: plantwatering/sleepearly
+      topic: flaura1/sleepearly
       payload: 'ON'
       qos: '1'
       retain: true
@@ -53,7 +53,7 @@
   description: 'Sends you a telegram when it comes out of deepsleep and stays awake for 10 seconds, like when it starts watering or you want to OTA'
   trigger:
   - platform: mqtt
-    topic: plantwatering/available_mode
+    topic: flaura1/available_mode
     payload: online
   condition: []
   action:
@@ -64,7 +64,7 @@
       milliseconds: 0
   - wait_for_trigger:
     - platform: mqtt
-      topic: plantwatering/available_mode
+      topic: flaura1/available_mode
       payload: online
     continue_on_timeout: false
     timeout: '20'
