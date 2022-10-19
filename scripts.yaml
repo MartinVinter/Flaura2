@@ -3,19 +3,19 @@ water_plant:
   sequence:
   - service: mqtt.publish
     data:
-      topic: plantwatering/ota_mode
+      topic: flaura1/ota_mode
       payload: 'ON'
       qos: '1'
       retain: true
   - service: mqtt.publish
     data:
-      topic: plantwatering/sleepearly
+      topic: flaura1/sleepearly
       payload: 'OFF'
       qos: '1'
       retain: true
   - wait_for_trigger:
     - platform: mqtt
-      topic: plantwatering/available_mode
+      topic: flaura1/available_mode
       payload: online
     continue_on_timeout: false
   - delay:
@@ -43,13 +43,13 @@ water_plant:
       milliseconds: 100
   - service: mqtt.publish
     data:
-      topic: plantwatering/ota_mode
+      topic: flaura1/ota_mode
       payload: 'OFF'
       qos: '2'
       retain: true
   - service: mqtt.publish
     data:
-      topic: plantwatering/sleepearly
+      topic: flaura1/sleepearly
       payload: 'ON'
       qos: '2'
       retain: true
