@@ -1,0 +1,79 @@
+- id: '1650105153163'
+  alias: plant_watering_ota-ON
+  description: 'Next time wakes from deepsleep it disables deepsleep. Use a input_boolean to tie on/off automations together '
+  trigger:
+  - platform: state
+    entity_id: input_boolean.plant_watering_ota
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: mqtt.publish
+    data:
+      topic: flaura1/ota_mode
+      payload: 'ON'
+      qos: '1'
+      retain: true
+  - service: mqtt.publish
+    data:
+      topic: flaura1/sleepearly
+      payload: 'OFF'
+      qos: '1'
+      retain: true
+  mode: single
+
+
+
+- id: '1650105638216'
+  alias: plant_watering_ota_OFF
+  description: 'Turns deepsleep back on and goes to sleep imediatly'
+  trigger:
+  - platform: state
+    entity_id: input_boolean.plant_watering_ota
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: mqtt.publish
+    data:
+      topic: flaura1/ota_mode
+      payload: 'OFF'
+      qos: '1'
+      retain: true
+  - service: mqtt.publish
+    data:
+      topic: flaura1/sleepearly
+      payload: 'ON'
+      qos: '1'
+      retain: true
+  mode: single
+
+- id: '1660402274356'
+  alias: Notify if watering comes online
+  description: 'Sends you a telegram when it comes out of deepsleep and stays awake for 10 seconds, like when it starts watering or you want to OTA'
+  trigger:
+  - platform: mqtt
+    topic: flaura1/available_mode
+    payload: online
+  condition: []
+  action:
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - wait_for_trigger:
+    - platform: mqtt
+      topic: flaura1/available_mode
+      payload: online
+    continue_on_timeout: false
+    timeout: '20'
+  - service: telegram_bot.send_message
+    data:
+      message: Plant Watering has come Online
+  - delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+  mode: single

@@ -1,0 +1,56 @@
+water_plant:
+  alias: Water Plant
+  sequence:
+  - service: mqtt.publish
+    data:
+      topic: flaura1/ota_mode
+      payload: 'ON'
+      qos: '1'
+      retain: true
+  - service: mqtt.publish
+    data:
+      topic: flaura1/sleepearly
+      payload: 'OFF'
+      qos: '1'
+      retain: true
+  - wait_for_trigger:
+    - platform: mqtt
+      topic: flaura1/available_mode
+      payload: online
+    continue_on_timeout: false
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 3
+      milliseconds: 0
+  - service: switch.turn_on
+    data: {}
+    target:
+      entity_id: switch.pump
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - service: switch.turn_off
+    data: {}
+    target:
+      entity_id: switch.pump
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 0
+      milliseconds: 100
+  - service: mqtt.publish
+    data:
+      topic: flaura1/ota_mode
+      payload: 'OFF'
+      qos: '2'
+      retain: true
+  - service: mqtt.publish
+    data:
+      topic: flaura1/sleepearly
+      payload: 'ON'
+      qos: '2'
+      retain: true
+  mode: single

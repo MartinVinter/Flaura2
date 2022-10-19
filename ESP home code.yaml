@@ -1,5 +1,7 @@
 esphome:
   name: flaura1
+  platform: ESP32
+  board: esp-wrover-kit 
   
 #power on moisture sensor when not sleeping  
   on_boot:
@@ -10,26 +12,55 @@ esphome:
     - lambda: |-        
         delay(30000);
 
-esp32:
-  board: esp-wrover-kit
-  framework:
-    type: arduino
-
 # Enable logging
 logger:
   level: VERBOSE
 
-# Enable Home Assistant API
-api:
-  encryption:
-    key: "key"
+interval:
+  - interval: 100ms
+    then:
+      - mqtt.publish:
+          topic: flaura1/available_mode
+          payload: "online"  
+      - delay: 5000ms    
 
+mqtt:
+  broker: !secret HA_broker_ip
+  username: !secret HA_broker_username
+  password: !secret HA_broker_password
+  #making sure the birth and will topics are different will disable them so if ESP is unavailable will show last value and not leave gaps in sensor graphs
+  birth_message:
+    topic: plantwatering/birthdisable
+    payload: disable
+  will_message:
+    topic: plantwatering/willdisable
+    payload: disable
+  discovery: true
+  discovery_retain: true   
+  on_message:
+    - topic: flaura1/ota_mode
+      payload: 'ON'
+      then:
+        - logger.log: 'OTA Mode ON - Deep sleep DISABLED'
+        - deep_sleep.prevent: deep_sleep_1
+    - topic: flaura1/sleepearly
+      payload: 'ON'
+      then:
+        - deep_sleep.enter: deep_sleep_1        
 ota:
   password: "password"
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  manual_ip:
+    static_ip: !secret espwatering_ip
+    gateway: !secret gateway_ip
+    subnet: 255.255.255.0
+    dns1: !secret gateway_ip
+    dns2: 8.8.8.8  
+  output_power: 15dB
+  fast_connect: on  
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -120,7 +151,9 @@ sensor:
               id: deep_sleep1
               sleep_duration: 1 min
       
-
+  - platform: wifi_signal
+    name: "flaura1 WiFi Signal"
+    update_interval: 60s   
 
 
   - platform: adc
