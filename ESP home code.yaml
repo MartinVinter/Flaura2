@@ -16,6 +16,14 @@ esphome:
 logger:
   level: VERBOSE
 
+interval:
+  - interval: 100ms
+    then:
+      - mqtt.publish:
+          topic: plantwatering/available_mode
+          payload: "online"  
+      - delay: 5000ms    
+
 mqtt:
   broker: !secret HA_broker_ip
   username: !secret HA_broker_username
