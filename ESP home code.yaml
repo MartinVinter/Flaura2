@@ -30,7 +30,7 @@ mqtt:
   discovery: true
   discovery_retain: true   
   on_message:
-    - topic: solarplantwatering/ota_mode
+    - topic: plantwatering/ota_mode
       payload: 'ON'
       then:
         - logger.log: 'OTA Mode ON - Deep sleep DISABLED'
