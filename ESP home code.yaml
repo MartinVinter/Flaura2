@@ -20,7 +20,7 @@ interval:
   - interval: 100ms
     then:
       - mqtt.publish:
-          topic: plantwatering/available_mode
+          topic: flaura1/available_mode
           payload: "online"  
       - delay: 5000ms    
 
@@ -38,12 +38,12 @@ mqtt:
   discovery: true
   discovery_retain: true   
   on_message:
-    - topic: plantwatering/ota_mode
+    - topic: flaura1/ota_mode
       payload: 'ON'
       then:
         - logger.log: 'OTA Mode ON - Deep sleep DISABLED'
         - deep_sleep.prevent: deep_sleep_1
-    - topic: plantwatering/sleepearly
+    - topic: flaura1/sleepearly
       payload: 'ON'
       then:
         - deep_sleep.enter: deep_sleep_1        
