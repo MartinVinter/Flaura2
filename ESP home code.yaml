@@ -161,17 +161,6 @@ sensor:
     id: "battery_level"
     internal: true
     
-  - platform: template
-    name: "flaura1 charge level"
-    unit_of_measurement: '%'
-    update_interval: 1s
-    filters:
-#not sure about the calibration, haven't tested it.
-    - calibrate_linear:
-        - 0.02 -> 0.00
-        - 0.65 -> 100.00    
-#    lambda: |-
-#      return ((id(battery_level).state /3.70) * 100.00);
 
 switch:
   - platform: gpio
