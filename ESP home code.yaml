@@ -179,19 +179,13 @@ switch:
     name: "Pump"
     id: pump
     inverted: true
+    icon: "mdi:watering-can"
+    #to prevent pump running too long if something goes wrong
+    on_turn_on:
+    - delay: 60000ms
+    - switch.turn_off: pump    
 
-cover:
-  - platform: template
-    name: "pump"
-    open_action:
-      # Cancel any previous action
-      - switch.turn_off: pump
-      # Turn the OPEN switch on briefly
-      - switch.turn_on: pump
-      - delay: 30s
-      - switch.turn_off: pump
-    close_action:
-      - switch.turn_off: pump
+
 
 
 
