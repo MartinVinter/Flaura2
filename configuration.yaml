@@ -4,6 +4,13 @@
         friendly_name: flaura1 charge level
         device_class: battery
         unit_of_measurement: "%"
-		#e.g. (4.2-3)X100/(4.2-3) where 3 is the voltage at which esp turns off due to battery potection
+#e.g. (4.2-3)X100/(4.2-3) where 3 is the voltage at which esp turns off due to battery potection
         value_template: >
             {{ ((states('sensor.battery_level')|float-3) * 83.33)|round(2) }}Ba
+
+   pump_time:
+      name: Flaura1 Pump time
+      min: 0
+      max: 60
+      step: 1
+      unit_of_measurement: Seconds
