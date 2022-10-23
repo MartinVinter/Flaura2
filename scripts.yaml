@@ -30,7 +30,7 @@ water_plant:
   - delay:
       hours: 0
       minutes: 0
-      seconds: 5
+      seconds: "{{ states('input_number.Flaura1_Pump_time') | int }}"
       milliseconds: 0
   - service: switch.turn_off
     data: {}
