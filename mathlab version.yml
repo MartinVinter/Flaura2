@@ -1,0 +1,233 @@
+substitutions:
+  esp_name: Flowerpot test
+  esp_id: flowerpot_test
+  soil_moisture_threshold: "50" # %
+  watering_time: 2s
+  sleep_until: "12:15:00"
+  waterLevelSensorThreshold: "0.1" # V
+
+esphome:
+  name: ${esp_id}
+  on_boot:
+    priority: 900.0
+    then:
+      - delay: 1s
+      - output.turn_off: power_moisture_sensor
+      - output.turn_off: power_pump
+      - output.turn_off: ${esp_id}_100
+      - output.turn_off: ${esp_id}_75
+      - output.turn_off: ${esp_id}_50
+      - output.turn_off: ${esp_id}_25
+      - output.turn_off: ${esp_id}_10
+      - script.execute: run
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+deep_sleep:
+  run_duration: 10h
+  id: deep_sleep1
+  wakeup_pin:
+    number: GPIO00
+    inverted: true
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret ha_password
+
+ota:
+  password: !secret ha_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${esp_name} AP"
+    password: !secret ap_password
+
+captive_portal:
+
+output:
+  - platform: gpio
+    pin: 19
+    id: power_moisture_sensor
+
+  - platform: gpio
+    pin: 23
+    id: power_pump
+
+  - platform: gpio
+    pin: 27
+    id: ${esp_id}_100
+
+  - platform: gpio
+    pin: 26
+    id: ${esp_id}_75
+
+  - platform: gpio
+    pin: 25
+    id: ${esp_id}_50
+
+  - platform: gpio
+    pin: 35
+    id: ${esp_id}_25
+
+  - platform: gpio
+    pin: 34
+    id: ${esp_id}_10
+
+sensor:
+  - platform: adc
+    pin: 13
+    id: "${esp_id}_water_level_sensor"
+    update_interval: never
+
+  - platform: adc
+    pin: 33
+    id: "${esp_id}_soil_moisture"
+    name: "${esp_name} soil moisture"
+    unit_of_measurement: "%"
+    attenuation: 11dB
+    filters:
+      - median:
+          window_size: 11
+          send_every: 11
+          send_first_at: 11
+      - calibrate_linear:
+        - 0.84 -> 100.00
+        - 2.40 -> 0.00
+      - lambda: |
+          if (x < 0) return 0; 
+          else if (x > 100) return 100;
+          else return (x);
+    accuracy_decimals: 0
+    update_interval: never
+
+  - platform: adc
+    pin: GPIO35
+    id: "${esp_id}_battery_raw"
+    name: "${esp_name} battery raw"
+    update_interval: never
+    accuracy_decimals: 2
+    attenuation: 11dB
+    filters:
+      - median:
+          window_size: 11
+          send_every: 11
+          send_first_at: 11
+      - multiply: 2.0
+    
+  - platform: template
+    id: "${esp_id}_battery"
+    name: "${esp_name} battery"
+    unit_of_measurement: '%'
+    update_interval: never
+    lambda: |-
+      return (id(${esp_id}_battery_raw).state - 3.5) * 167; // 100 / (4.1 - 3.5)
+  - platform: template
+    id: "${esp_id}_water_level"
+    name: "${esp_name} water level"
+    unit_of_measurement: '%'
+    update_interval: never
+    lambda: |-
+      int values[5] = { 100, 75, 50, 25, 10};
+      for (int i = 0; i < 5; i++) {
+        auto level = id(${esp_id}_100);
+        switch (i) {
+          case 0:
+            level = id(${esp_id}_100);
+            break;
+          case 1:
+            level = id(${esp_id}_75);
+            break;
+          case 2:
+            level = id(${esp_id}_50);
+            break;
+          case 3:
+            level = id(${esp_id}_25);
+            break;
+          case 4:
+            level = id(${esp_id}_10);
+            break;
+        }
+        level->turn_on();
+        delay(200);
+        id(${esp_id}_water_level_sensor).update();
+        level->turn_off();
+        if (id(${esp_id}_water_level_sensor).state > ${waterLevelSensorThreshold}) {
+          return values[i];
+        }
+      }
+      return 0;
+script:
+  - id: run
+    mode: queued
+    then:
+      - script.execute: measure_soil_moisture
+      - script.execute: measure_water_level
+      - script.execute: masure_battery_level
+      - script.wait: measure_soil_moisture
+      - script.execute: water_plant
+      - script.wait: water_plant
+      - delay: 1s
+      - output.turn_off: power_moisture_sensor
+      - output.turn_off: power_pump
+      - output.turn_off: ${esp_id}_100
+      - output.turn_off: ${esp_id}_75
+      - output.turn_off: ${esp_id}_50
+      - output.turn_off: ${esp_id}_25
+      - output.turn_off: ${esp_id}_10
+      - script.execute: enter_sleep
+
+  - id: measure_water_level
+    then:
+      - component.update: ${esp_id}_water_level
+
+  - id: measure_soil_moisture
+    then:
+      - output.turn_on: power_moisture_sensor
+      - lambda: |-
+          for (int i = 0; i < 11; i++) {
+            delay(100);
+            id(${esp_id}_soil_moisture).update();
+          }
+      - output.turn_off: power_moisture_sensor
+
+  - id: water_plant
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(${esp_id}_soil_moisture).state < ${soil_moisture_threshold};
+          then:
+            - output.turn_on: power_pump
+            - delay: ${watering_time}
+            - output.turn_off: power_pump
+
+  - id: masure_battery_level
+    then:
+      - component.update: ${esp_id}_battery_raw
+      - lambda: |-
+          for (int i = 0; i < 11; i++) {
+            id(${esp_id}_battery_raw).update();
+            delay(200);
+          }
+      - component.update: ${esp_id}_battery
+
+  - id: enter_sleep
+    then:
+      - deep_sleep.enter: 
+          #until: ${sleep_until}
+          #time_id: ha_time
+          sleep_duration: 10s # for test only
